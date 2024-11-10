@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Editor</title>
+    <style>
+        body {
+            font-family: Consolas, monospace;
+            background-color: #2F343F;
+            color: #FFFFFF;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .editor-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            background-color: #1E1E1E;
+        }
+        .line-numbers {
+            padding: 10px;
+            width: 40px;
+            text-align: right;
+            color: #66D9EF;
+            border-right: 1px solid #333;
+            position: sticky;
+            top: 0;
+            overflow-y: scroll;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        textarea {
+            width: 100%;
+            resize: none;
+            border: none;
+            padding: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #FFFFFF;
+            background-color: #1E1E1E;
+            overflow-y: scroll;
+        }
+        textarea:focus {
+            outline: none;
+        }
+        .file-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        #search-container {
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            background-color: #1E1E1E;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <div class="line-numbers" id="lineNumbers"></div>
+        <textarea id="fileContent"></textarea>
+    </div>
+    <div class="file-actions">
+        <input type="file" id="fileInput" accept=".txt" style="display: none;">
+        <button onclick="document.getElementById('fileInput').click()">Open File</button>
+        <button onclick="downloadFile()">Save File</button>
+    </div>
+    <div id="search-container">
+        <input type="number" id="search-line" placeholder="Search line number">
+        <button onclick="searchLine()">Go</button>
+    </div>
+
+    <script>
+        let fileContent = document.getElementById('fileContent');
+        let lineNumbers = document.getElementById('lineNumbers');
+        let fileInput = document.getElementById('fileInput');
+        let searchLineInput = document.getElementById('search-line');
+
+        fileInput.addEventListener('change', uploadFile);
+        fileContent.addEventListener('input', updateLineNumbers);
+        fileContent.addEventListener('scroll', scrollSync);
+        lineNumbers.addEventListener('scroll', scrollSyncLineNumbers);
+
+        function uploadFile() {
+            let file = fileInput.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = (e) => {
+                fileContent.value = e.target.result;
+                updateLineNumbers();
+            };
+            reader.readAsText(file);
+        }
+
+        function downloadFile() {
+            let text = fileContent.value;
+            let blob = new Blob([text], {type: 'text/plain'});
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'edited_file.txt';
+            link.click();
+        }
+
+        function updateLineNumbers() {
+            let text = fileContent.value;
+            let lines = text.split('\n');
+            let numberedText = '';
+            for (let i = 0; i < lines.length; i++) {
+                numberedText += `${i + 1}\n`;
+            }
+            lineNumbers.innerHTML = numberedText.replace(/(\r\n|\n|\r)/gm, '<br>');
+            lineNumbers.scrollTop = fileContent.scrollTop;
+        }
+
+        function scrollSync() {
+            lineNumbers.scrollTop = fileContent.scrollTop;
+            requestAnimationFrame(scrollSync);
+        }
+
+        function scrollSyncLineNumbers() {
+            fileContent.scrollTop = lineNumbers.scrollTop;
+            requestAnimationFrame(scrollSyncLineNumbers);
+        }
+
+        function searchLine() {
+            let lineNumber = parseInt(searchLineInput.value);
+            if (isNaN(lineNumber)) return;
+            let lines = fileContent.value.split('\n');
+            if (lineNumber > lines.length) return;
+            fileContent.scrollTop = (lineNumber - 1) * 20; // 20 is the approximate line height
+            lineNumbers.scrollTop = (lineNumber - 1) * 20;
+        }
+    </script>
+</body>
+</html>
